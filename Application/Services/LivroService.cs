@@ -11,20 +11,20 @@ namespace Application.Services
     public class LivroService : ILivroService
     {
         private ILivroRepository _livroRepository;
-        private IAutorService _autorService;
+        private IAutorRepository _autorRepository;
 
-        public LivroService(ILivroRepository livroRepository, IAutorService autorService)
+        public LivroService(ILivroRepository livroRepository, IAutorRepository autorRepository)
         {
             _livroRepository = livroRepository;
-            _autorService = autorService;
+            _autorRepository = autorRepository;
 
         }
 
         public async Task<LivroDto> AtualizarLivroAsync(AtualizacaoLivroDto request, CancellationToken ct)
         {            
-            var autor = await _autorService.ObterAutorAsync(request.IdAutor, ct);
+            var autor = await _autorRepository.ObterPorIdAsync(request.IdAutor, ct);
             if(autor == null)
-                return new LivroDto { Status = autor.Status, Message = autor.Message };
+                return new LivroDto { Status = HttpStatusCode.NotFound, Message = "Autor não encontrado" };
 
             var livro = await _livroRepository.ObterLivroAsync(request.IdLivro, ct);
 
@@ -36,9 +36,9 @@ namespace Application.Services
 
         public async Task<LivroDto> AdicionarLivroAsync(CadastroLivroDto request, CancellationToken ct)
         {
-            var autor = await _autorService.ObterAutorAsync(request.IdAutor, ct);
+            var autor = await _autorRepository.ObterPorIdAsync(request.IdAutor, ct);
             if (autor == null)
-                return new LivroDto { Status = autor.Status, Message = autor.Message };
+                return new LivroDto { Status = HttpStatusCode.NotFound, Message = "Autor não encontrado" };
 
             var novoLivro = new Livro(request.Titulo, request.DataLancamento, request.IdAutor);
             
@@ -104,8 +104,8 @@ namespace Application.Services
 
         private async Task<bool> ValidarAutor(Guid idAutor, CancellationToken ct)
         {
-            var autor = await _autorService.ObterAutorAsync(idAutor, ct);
-            if (autor.Status != HttpStatusCode.OK)
+            var autor = await _autorRepository.ObterPorIdAsync(idAutor, ct);
+            if (autor == null)
                 return false;
 
             return true;
